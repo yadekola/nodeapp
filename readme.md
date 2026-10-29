@@ -1,4 +1,4 @@
-# Deploying a Node.js API to AWS EC2 with Jenkins, Docker Hub, and SSH
+##### Deploying a Node.js API to AWS EC2 with Jenkins, Docker Hub, and SSH
 
 ##### 1. Overview
 
