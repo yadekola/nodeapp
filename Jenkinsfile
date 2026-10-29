@@ -1,35 +1,50 @@
 pipeline{
-    agent any
+    agent any 
     environment{
-        DOCKER_IMAGE = 'yacks/cicd-node-api2'
-        DOCKER_CREDS = 'dockerhub-credential'
-        EC2_USER = 'ubuntu'
-        // EC2_HOST = 'EC2_PUBLIC_IP_OR_DNS'
-        CONTAINER_NAME = 'cicd-node-api2'
-        APP_PORT = '3000'
-        // EC2_SSH_CREDS = 'ec2-ssh-key'
+        DOCKERHUB_USERNAME = "yacks"
+        IMAGE_NAME = "${DOCKERHUB_USERNAME}/nodejs-cicd-app2"
+        APP_PORT = "3000"
+        CONTAINER_NAME = "nodejs-apps"
     }
-
-    stages {
-        stage("Check out jobs"){
+    stages{
+        stage("Checkout source code"){
             steps{
                 checkout scm
             }
-
         }
 
         stage("Install dependencies"){
             steps{
-                sh 'npm ci'
+                sh "npm ci"
             }
-            
         }
 
-        stage("Test Code"){
+         stage("Build docker image"){
             steps{
-                sh 'npm test'
+                sh """
+                docker build \
+                -t ${IMAGE_NAME}:${BUILD_NUMBER} \
+                -t ${IMAGE_NAME}:latest .
+                """
             }
-            
+        }
+        stage("Push to docker hub"){
+            steps{
+                withCredentials([
+                    usernamePassword(
+                        credentialsId: 'dockerhub-credentials',
+                        usernameVariable: 'DOCKERHUB_USERNAME',
+                        passwordVariable: 'DOCKER_TOKEN'
+                    )
+                ]){
+                    sh """
+                    echo "$DOCKER_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+                    docker push ${IMAGE_NAME}:${BUILD_NUMBER}
+                    docker push ${IMAGE_NAME}:latest
+                    docker logout
+                    """
+                }
+            }
         }
     }
 }
